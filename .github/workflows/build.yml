@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Set up MSYS2 (MinGW gcc for Fyne CGO)
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc
+
+      - name: Build otp.exe
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          $env:PATH = "C:\msys64\mingw64\bin;" + $env:PATH
+          gcc --version
+          go mod tidy
+          go build -trimpath -ldflags="-s -w -H windowsgui" -o otp.exe ./cmd/otp
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: otp-windows-amd64
+          path: otp.exe
+          if-no-files-found: error
