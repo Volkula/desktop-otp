@@ -9,7 +9,7 @@ on:
 
 jobs:
   linux:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,11 +33,18 @@ jobs:
       - name: Build desktop-otp (Linux)
         env:
           CGO_ENABLED: "1"
-          # Help gcc/ld find shared libs (go-gl/glfw uses -lXxf86vm on X11)
-          LIBRARY_PATH: /usr/lib/x86_64-linux-gnu
         run: |
+          set -euo pipefail
           mkdir -p dist
-          go build -trimpath -ldflags "-s -w" -o dist/desktop-otp ./cmd/otp
+          go build -trimpath -ldflags "-s -w" -o dist/desktop-otp ./cmd/otp 2>&1 | tee build-linux.log
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build-log
+          path: build-linux.log
+          if-no-files-found: ignore
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

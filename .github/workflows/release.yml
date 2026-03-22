@@ -50,7 +50,7 @@ jobs:
 
   linux:
     needs: windows
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -74,20 +74,36 @@ jobs:
       - name: Build Linux binary
         env:
           CGO_ENABLED: "1"
-          LIBRARY_PATH: /usr/lib/x86_64-linux-gnu
         run: |
+          set -euo pipefail
           mkdir -p dist
-          go build -trimpath -ldflags "-s -w" -o dist/desktop-otp ./cmd/otp
+          go build -trimpath -ldflags "-s -w" -o dist/desktop-otp ./cmd/otp 2>&1 | tee build-linux.log
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build-log
+          path: build-linux.log
+          if-no-files-found: ignore
 
       - name: Install nfpm
         run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.41.3
 
-      - name: Package .deb and .rpm
+      - name: Package deb
         run: |
           export PATH="$(go env GOPATH)/bin:$PATH"
           VERSION="${GITHUB_REF_NAME#v}"
           if [ -z "$VERSION" ]; then VERSION="0.0.0"; fi
           nfpm package --config packaging/nfpm.yaml --packager deb --target dist/ --version "$VERSION"
+          ls -la dist/
+
+      - name: Package rpm
+        continue-on-error: true
+        run: |
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ -z "$VERSION" ]; then VERSION="0.0.0"; fi
           nfpm package --config packaging/nfpm.yaml --packager rpm --target dist/ --version "$VERSION"
           ls -la dist/
 
@@ -97,4 +113,5 @@ jobs:
           files: |
             dist/*.deb
             dist/*.rpm
+          fail_on_unmatched_files: false
           generate_release_notes: false
