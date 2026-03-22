@@ -46,7 +46,8 @@ func Run(cfg *config.File) {
 	listBox := container.NewVBox()
 	var codeLabels []*widget.Label
 
-	rebuildList := func() {
+	var rebuildList func()
+	rebuildList = func() {
 		listBox.RemoveAll()
 		codeLabels = codeLabels[:0]
 
