@@ -21,6 +21,10 @@ type File struct {
 	DataDir string `json:"data_dir,omitempty"`
 	// MinimizeToTray: nil = default true (omit in old JSON).
 	MinimizeToTray *bool `json:"minimize_to_tray,omitempty"`
+	// DarkTheme: nil = default true (dark UI).
+	DarkTheme *bool `json:"dark_theme,omitempty"`
+	// HideAfterCopy: nil = default false — hide window after copying code from list.
+	HideAfterCopy *bool `json:"hide_after_copy,omitempty"`
 }
 
 func dir() (string, error) {
@@ -69,13 +73,15 @@ func Load() (*File, error) {
 }
 
 func defaultConfig() *File {
-	t := true
+	t, f := true, false
 	return &File{
-		Modifiers:      ModControl | ModShift,
-		VK:             0x4F,
-		Language:       "ru",
-		DataDir:        "",
-		MinimizeToTray: &t,
+		Modifiers:       ModControl | ModShift,
+		VK:              0x4F,
+		Language:        "ru",
+		DataDir:         "",
+		MinimizeToTray:  &t,
+		DarkTheme:       &t,
+		HideAfterCopy:   &f,
 	}
 }
 
@@ -90,6 +96,32 @@ func (f *File) MinimizeToTrayBool() bool {
 // SetMinimizeToTray sets the value to persist.
 func (f *File) SetMinimizeToTray(v bool) {
 	f.MinimizeToTray = &v
+}
+
+// DarkThemeBool returns whether to use the built-in dark theme (default true).
+func (f *File) DarkThemeBool() bool {
+	if f.DarkTheme == nil {
+		return true
+	}
+	return *f.DarkTheme
+}
+
+// SetDarkTheme sets dark vs light theme flag.
+func (f *File) SetDarkTheme(v bool) {
+	f.DarkTheme = &v
+}
+
+// HideAfterCopyBool returns whether to hide the window after copying a code (default false).
+func (f *File) HideAfterCopyBool() bool {
+	if f.HideAfterCopy == nil {
+		return false
+	}
+	return *f.HideAfterCopy
+}
+
+// SetHideAfterCopy sets hide-after-copy behavior.
+func (f *File) SetHideAfterCopy(v bool) {
+	f.HideAfterCopy = &v
 }
 
 // ResolveDataDir returns the absolute directory for accounts.json.

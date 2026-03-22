@@ -54,6 +54,10 @@ var table = map[string]map[Lang]string{
 		RU: "Коды",
 		EN: "Codes",
 	},
+	"tab_add": {
+		RU: "Добавить",
+		EN: "Add",
+	},
 	"tab_settings": {
 		RU: "Настройки",
 		EN: "Settings",
@@ -149,6 +153,14 @@ var table = map[string]map[Lang]string{
 	"settings_minimize_tray": {
 		RU: "Сворачивать в трей при закрытии окна",
 		EN: "Minimize to tray when closing the window",
+	},
+	"settings_dark_theme": {
+		RU: "Тёмная тема",
+		EN: "Dark theme",
+	},
+	"settings_hide_after_copy": {
+		RU: "Скрывать окно после копирования кода (кнопка с иконкой)",
+		EN: "Hide window after copying code (icon button)",
 	},
 	"settings_hotkey": {
 		RU: "Глобальная горячая клавиша",

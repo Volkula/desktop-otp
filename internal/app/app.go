@@ -17,6 +17,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/pquerna/otp/totp"
@@ -36,6 +37,7 @@ func Run(cfg *config.File) {
 
 	a := fyneapp.NewWithID("desctop-otp")
 	applyAppIcon(a)
+	applyTheme(a, cfg)
 	w := a.NewWindow(loc.T("window_title"))
 	w.Resize(fyne.NewSize(560, 520))
 
@@ -66,14 +68,18 @@ func Run(cfg *config.File) {
 			codeLbl := widget.NewLabel("------")
 			codeLbl.TextStyle = fyne.TextStyle{Monospace: true}
 
-			copyBtn := widget.NewButton(loc.T("btn_copy"), func() {
+			copyBtn := widget.NewButtonWithIcon("", theme.ContentCopyIcon(), func() {
 				c, err := totp.GenerateCode(secret, time.Now())
 				if err != nil {
 					dialog.ShowError(err, w)
 					return
 				}
 				w.Clipboard().SetContent(c)
+				if cfg.HideAfterCopyBool() {
+					w.Hide()
+				}
 			})
+			copyBtn.Importance = widget.LowImportance
 
 			delBtn := widget.NewButton(loc.T("btn_delete"), func() {
 				d.Accounts = append(d.Accounts[:i], d.Accounts[i+1:]...)
@@ -183,6 +189,12 @@ func Run(cfg *config.File) {
 	trayCheck := widget.NewCheck("", func(bool) {})
 	trayCheck.SetChecked(cfg.MinimizeToTrayBool())
 
+	darkCheck := widget.NewCheck("", func(bool) {})
+	darkCheck.SetChecked(cfg.DarkThemeBool())
+
+	hideAfterCopyCheck := widget.NewCheck("", func(bool) {})
+	hideAfterCopyCheck.SetChecked(cfg.HideAfterCopyBool())
+
 	lblHotkey := widget.NewLabel("")
 	modAlt := widget.NewCheck("", nil)
 	modCtrl := widget.NewCheck("", nil)
@@ -275,6 +287,9 @@ func Run(cfg *config.File) {
 		cfg.VK = vk
 		cfg.DataDir = strings.TrimSpace(dataDirEnt.Text)
 		cfg.SetMinimizeToTray(trayCheck.Checked)
+		cfg.SetDarkTheme(darkCheck.Checked)
+		cfg.SetHideAfterCopy(hideAfterCopyCheck.Checked)
+		applyTheme(a, cfg)
 
 		if err := config.Save(cfg); err != nil {
 			dialog.ShowError(errors.New(loc.T("settings_err_save")), w)
@@ -321,6 +336,8 @@ func Run(cfg *config.File) {
 		lblDataDir.SetText(loc.T("settings_data_dir"))
 		browseBtn.SetText(loc.T("settings_browse"))
 		trayCheck.SetText(loc.T("settings_minimize_tray"))
+		darkCheck.SetText(loc.T("settings_dark_theme"))
+		hideAfterCopyCheck.SetText(loc.T("settings_hide_after_copy"))
 		lblHotkey.SetText(loc.T("settings_hotkey"))
 		modAlt.SetText(loc.T("settings_mod_alt"))
 		modCtrl.SetText(loc.T("settings_mod_ctrl"))
@@ -330,9 +347,10 @@ func Run(cfg *config.File) {
 		lblLang.SetText(loc.T("settings_lang"))
 		saveSettingsBtn.SetText(loc.T("settings_save"))
 		if tabs := w.Content(); tabs != nil {
-			if at, ok := tabs.(*container.AppTabs); ok && len(at.Items) > 1 {
+			if at, ok := tabs.(*container.AppTabs); ok && len(at.Items) > 2 {
 				at.Items[0].Text = loc.T("tab_totp")
-				at.Items[1].Text = loc.T("tab_settings")
+				at.Items[1].Text = loc.T("tab_add")
+				at.Items[2].Text = loc.T("tab_settings")
 				at.Refresh()
 			}
 		}
@@ -346,6 +364,8 @@ func Run(cfg *config.File) {
 		dataDirEnt,
 		browseBtn,
 		trayCheck,
+		darkCheck,
+		hideAfterCopyCheck,
 		widget.NewSeparator(),
 		lblHotkey,
 		container.NewHBox(modAlt, modCtrl, modShift, modWin),
@@ -356,19 +376,22 @@ func Run(cfg *config.File) {
 		saveSettingsBtn,
 	)
 
-	scroll := container.NewVScroll(listBox)
-	scroll.SetMinSize(fyne.NewSize(520, 220))
+	codesScroll := container.NewVScroll(listBox)
+	codesScroll.SetMinSize(fyne.NewSize(520, 400))
 
-	totpContent := container.NewBorder(
-		hint, form, nil, nil,
-		scroll,
+	addVBox := container.NewVBox(
+		hint,
+		form,
 	)
+	addScroll := container.NewVScroll(addVBox)
+	addScroll.SetMinSize(fyne.NewSize(520, 400))
 
 	settingsContent := container.NewVScroll(settingsForm)
 	settingsContent.SetMinSize(fyne.NewSize(520, 360))
 
 	tabs := container.NewAppTabs(
-		container.NewTabItem(loc.T("tab_totp"), totpContent),
+		container.NewTabItem(loc.T("tab_totp"), codesScroll),
+		container.NewTabItem(loc.T("tab_add"), addScroll),
 		container.NewTabItem(loc.T("tab_settings"), settingsContent),
 	)
 	w.SetContent(tabs)
@@ -443,6 +466,14 @@ func Run(cfg *config.File) {
 		w.Show()
 	}
 	a.Run()
+}
+
+func applyTheme(a fyne.App, cfg *config.File) {
+	if cfg.DarkThemeBool() {
+		a.Settings().SetTheme(theme.DarkTheme())
+	} else {
+		a.Settings().SetTheme(theme.LightTheme())
+	}
 }
 
 func showSecretErr(w fyne.Window, loc locale.Bundle, err error) {
