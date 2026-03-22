@@ -9,7 +9,7 @@ on:
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,17 +24,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            gcc pkg-config \
+            build-essential pkg-config \
             libgl1-mesa-dev libglfw3-dev \
             libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
-            libxxf86vm-dev libxxf86vm1 \
+            libxxf86vm-dev \
             libgtk-3-dev
+          sudo ldconfig
+          test -e /usr/lib/x86_64-linux-gnu/libXxf86vm.so || { ls -la /usr/lib/x86_64-linux-gnu/libXxf86vm*; exit 1; }
 
       - name: Build desktop-otp (Linux)
         env:
           CGO_ENABLED: "1"
-          # Ensure ld finds libXxf86vm (go-gl/glfw links -lXxf86vm)
-          CGO_LDFLAGS: "-L/usr/lib/x86_64-linux-gnu"
+          # Help gcc/ld find shared libs (go-gl/glfw uses -lXxf86vm on X11)
+          LIBRARY_PATH: /usr/lib/x86_64-linux-gnu
         run: |
           mkdir -p dist
           go build -trimpath -ldflags "-s -w" -o dist/desktop-otp ./cmd/otp
