@@ -1,0 +1,42 @@
+# nfpm: https://nfpm.goreleaser.com
+# Version is overridden on CI: nfpm package ... --version "$VERSION"
+name: desktop-otp
+version: 0.0.0
+arch: amd64
+platform: linux
+maintainer: "Volkula <noreply@github.com>"
+description: |
+  Desktop TOTP authenticator (Fyne). Tray, global hotkey, ru/en UI.
+vendor: Volkula
+homepage: https://github.com/Volkula/desktop-otp
+license: MIT
+section: utils
+priority: optional
+
+contents:
+  - src: dist/desktop-otp
+    dst: /usr/bin/desktop-otp
+    file_info:
+      mode: 0755
+  - src: packaging/linux/desktop-otp.desktop
+    dst: /usr/share/applications/desktop-otp.desktop
+
+overrides:
+  deb:
+    depends:
+      - libgl1
+      - libglfw3
+      - libx11-6
+      - libxrandr2
+      - libxinerama1
+      - libxcursor1
+      - libxi6
+  rpm:
+    depends:
+      - mesa-libGL
+      - glfw
+      - libX11
+      - libXrandr
+      - libXinerama
+      - libXcursor
+      - libXi

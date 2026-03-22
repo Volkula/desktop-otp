@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Desktop OTP
+Name[ru]=Desktop OTP
+Comment=TOTP authenticator
+Comment[ru]=Генератор TOTP
+Exec=/usr/bin/desktop-otp
+Terminal=false
+Type=Application
+Categories=Utility;Security;
+Keywords=otp;totp;2fa;
