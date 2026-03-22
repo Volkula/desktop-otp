@@ -243,10 +243,3 @@ func Run(cfg *config.File) {
 	}
 	a.Run()
 }
-</think>
-
-</think>
-Исправляю ошибку с каналом hotkey и завершаю `Run`.
-
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-Read
