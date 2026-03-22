@@ -26,10 +26,10 @@ jobs:
         with:
           msystem: MINGW64
           install: >-
-            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-gcc
             mingw-w64-x86_64-pkg-config
             mingw-w64-x86_64-freetype
-            mingw-w64-x86_64-glfw3
+            mingw-w64-x86_64-glfw
 
       - name: Build otp.exe
         env:
