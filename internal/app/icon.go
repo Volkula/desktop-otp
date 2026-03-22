@@ -18,6 +18,11 @@ func init() {
 	}
 }
 
+// IconResource returns the embedded tray/window icon, or nil if decode failed.
+func IconResource() fyne.Resource {
+	return appIconResource
+}
+
 func applyAppIcon(a fyne.App) {
 	if appIconResource != nil {
 		a.SetIcon(appIconResource)

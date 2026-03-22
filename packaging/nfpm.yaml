@@ -1,7 +1,7 @@
 # nfpm: https://nfpm.goreleaser.com
-# Version is overridden on CI: nfpm package ... --version "$VERSION"
+# Set SEMVER in the environment (no leading v), e.g. export SEMVER="${GITHUB_REF_NAME#v}"
 name: desktop-otp
-version: 0.0.0
+version: ${SEMVER}
 arch: amd64
 platform: linux
 maintainer: "Volkula <noreply@github.com>"

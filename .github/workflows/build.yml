@@ -36,7 +36,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          go build -trimpath -ldflags "-s -w" -o dist/desktop-otp ./cmd/otp 2>&1 | tee build-linux.log
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+          if [ -z "$BRANCH" ] || [ "$BRANCH" = "HEAD" ]; then
+            BRANCH="${GITHUB_REF_NAME:-unknown}"
+          fi
+          go build -trimpath -ldflags "-s -w -X desctop-otp/internal/buildinfo.Version=${VERSION} -X desctop-otp/internal/buildinfo.BuildDate=${BUILD_DATE} -X desctop-otp/internal/buildinfo.Branch=${BRANCH}" -o dist/desktop-otp ./cmd/otp 2>&1 | tee build-linux.log
 
       - name: Upload build log on failure
         if: failure()
@@ -87,8 +93,12 @@ jobs:
           gcc --version
           go version
           go env CGO_ENABLED CC
-          # Single-quoted -ldflags so PowerShell does not treat -H as its own switch.
-          go build -trimpath -ldflags '-s -w -H windowsgui' -o otp.exe ./cmd/otp
+          $version = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "dev" }
+          $buildDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          $branch = (git rev-parse --abbrev-ref HEAD 2>$null)
+          if (-not $branch) { $branch = $env:GITHUB_REF_NAME }
+          if (-not $branch) { $branch = "unknown" }
+          go build -trimpath -ldflags "-s -w -H windowsgui -X desctop-otp/internal/buildinfo.Version=$version -X desctop-otp/internal/buildinfo.BuildDate=$buildDate -X desctop-otp/internal/buildinfo.Branch=$branch" -o otp.exe ./cmd/otp
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

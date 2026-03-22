@@ -40,7 +40,13 @@ jobs:
           $msys2 = "${{ steps.msys2.outputs.msys2-location }}"
           $env:PATH = "$goBin;$msys2\mingw64\bin;$env:PATH"
           $env:PKG_CONFIG_PATH = "$msys2\mingw64\lib\pkgconfig"
-          go build -trimpath -ldflags '-s -w -H windowsgui' -o otp.exe ./cmd/otp
+          $version = "${{ github.ref_name }}"
+          if (-not $version) { $version = "dev" }
+          $buildDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          $branch = (git rev-parse --abbrev-ref HEAD 2>$null)
+          if (-not $branch) { $branch = "${{ github.ref_name }}" }
+          if (-not $branch) { $branch = "unknown" }
+          go build -trimpath -ldflags "-s -w -H windowsgui -X desctop-otp/internal/buildinfo.Version=$version -X desctop-otp/internal/buildinfo.BuildDate=$buildDate -X desctop-otp/internal/buildinfo.Branch=$branch" -o otp.exe ./cmd/otp
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -77,7 +83,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          go build -trimpath -ldflags "-s -w" -o dist/desktop-otp ./cmd/otp 2>&1 | tee build-linux.log
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+          if [ -z "$BRANCH" ] || [ "$BRANCH" = "HEAD" ]; then
+            BRANCH="${GITHUB_REF_NAME:-unknown}"
+          fi
+          go build -trimpath -ldflags "-s -w -X desctop-otp/internal/buildinfo.Version=${VERSION} -X desctop-otp/internal/buildinfo.BuildDate=${BUILD_DATE} -X desctop-otp/internal/buildinfo.Branch=${BRANCH}" -o dist/desktop-otp ./cmd/otp 2>&1 | tee build-linux.log
 
       - name: Upload build log on failure
         if: failure()
@@ -93,18 +105,18 @@ jobs:
       - name: Package deb
         run: |
           export PATH="$(go env GOPATH)/bin:$PATH"
-          VERSION="${GITHUB_REF_NAME#v}"
-          if [ -z "$VERSION" ]; then VERSION="0.0.0"; fi
-          nfpm package --config packaging/nfpm.yaml --packager deb --target dist/ --version "$VERSION"
+          export SEMVER="${GITHUB_REF_NAME#v}"
+          if [ -z "$SEMVER" ]; then export SEMVER="0.0.0"; fi
+          nfpm package --config packaging/nfpm.yaml --packager deb --target dist/
           ls -la dist/
 
       - name: Package rpm
         continue-on-error: true
         run: |
           export PATH="$(go env GOPATH)/bin:$PATH"
-          VERSION="${GITHUB_REF_NAME#v}"
-          if [ -z "$VERSION" ]; then VERSION="0.0.0"; fi
-          nfpm package --config packaging/nfpm.yaml --packager rpm --target dist/ --version "$VERSION"
+          export SEMVER="${GITHUB_REF_NAME#v}"
+          if [ -z "$SEMVER" ]; then export SEMVER="0.0.0"; fi
+          nfpm package --config packaging/nfpm.yaml --packager rpm --target dist/
           ls -la dist/
 
       - name: Publish GitHub Release assets

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"desctop-otp/internal/buildinfo"
 	"desctop-otp/internal/config"
 	"desctop-otp/internal/hotkey"
 	"desctop-otp/internal/locale"
@@ -39,6 +40,9 @@ func Run(cfg *config.File) {
 	applyAppIcon(a)
 	applyTheme(a, cfg)
 	w := a.NewWindow(loc.T("window_title"))
+	if ic := IconResource(); ic != nil {
+		w.SetIcon(ic)
+	}
 	w.Resize(fyne.NewSize(560, 520))
 
 	hint := widget.NewLabel("")
@@ -222,6 +226,7 @@ func Run(cfg *config.File) {
 	var rebuildTray func()
 	var refreshHint func()
 	var applyLocale func()
+	var aboutForm *widget.Form
 	var restartHotkey func()
 	var applyCloseBehavior func()
 	var stopHK func()
@@ -237,13 +242,19 @@ func Run(cfg *config.File) {
 
 	rebuildTray = func() {
 		if desk, ok := a.(desktop.App); ok {
+			if ic := IconResource(); ic != nil {
+				desk.SetSystemTrayIcon(ic)
+			}
+			// Mark as quit so Fyne does not append a second "Quit" / localized exit item.
+			exitItem := fyne.NewMenuItem(loc.T("tray_exit"), func() { a.Quit() })
+			exitItem.IsQuit = true
 			desk.SetSystemTrayMenu(fyne.NewMenu(loc.T("tray_menu"),
 				fyne.NewMenuItem(loc.T("tray_show"), func() {
 					w.Show()
 					w.RequestFocus()
 				}),
 				fyne.NewMenuItemSeparator(),
-				fyne.NewMenuItem(loc.T("tray_exit"), func() { a.Quit() }),
+				exitItem,
 			))
 		}
 	}
@@ -347,12 +358,19 @@ func Run(cfg *config.File) {
 		lblLang.SetText(loc.T("settings_lang"))
 		saveSettingsBtn.SetText(loc.T("settings_save"))
 		if tabs := w.Content(); tabs != nil {
-			if at, ok := tabs.(*container.AppTabs); ok && len(at.Items) > 2 {
+			if at, ok := tabs.(*container.AppTabs); ok && len(at.Items) > 3 {
 				at.Items[0].Text = loc.T("tab_totp")
 				at.Items[1].Text = loc.T("tab_add")
 				at.Items[2].Text = loc.T("tab_settings")
+				at.Items[3].Text = loc.T("tab_about")
 				at.Refresh()
 			}
+		}
+		if aboutForm != nil && len(aboutForm.Items) >= 3 {
+			aboutForm.Items[0].Text = loc.T("about_version")
+			aboutForm.Items[1].Text = loc.T("about_branch")
+			aboutForm.Items[2].Text = loc.T("about_build_date")
+			aboutForm.Refresh()
 		}
 		refreshHint()
 		rebuildTray()
@@ -389,10 +407,33 @@ func Run(cfg *config.File) {
 	settingsContent := container.NewVScroll(settingsForm)
 	settingsContent.SetMinSize(fyne.NewSize(520, 360))
 
+	aboutVersion := widget.NewLabel(buildinfo.Value(buildinfo.Version))
+	aboutBranch := widget.NewLabel(buildinfo.Value(buildinfo.Branch))
+	aboutBuild := widget.NewLabel(buildinfo.Value(buildinfo.BuildDate))
+	ms := fyne.TextStyle{Monospace: true}
+	aboutVersion.TextStyle = ms
+	aboutBranch.TextStyle = ms
+	aboutBuild.TextStyle = ms
+	aboutVersion.Wrapping = fyne.TextWrapWord
+	aboutBranch.Wrapping = fyne.TextWrapWord
+	aboutBuild.Wrapping = fyne.TextWrapWord
+	aboutForm = widget.NewForm(
+		widget.NewFormItem("", aboutVersion),
+		widget.NewFormItem("", aboutBranch),
+		widget.NewFormItem("", aboutBuild),
+	)
+	aboutForm.Items[0].Text = loc.T("about_version")
+	aboutForm.Items[1].Text = loc.T("about_branch")
+	aboutForm.Items[2].Text = loc.T("about_build_date")
+
+	aboutContent := container.NewVScroll(aboutForm)
+	aboutContent.SetMinSize(fyne.NewSize(520, 360))
+
 	tabs := container.NewAppTabs(
 		container.NewTabItem(loc.T("tab_totp"), codesScroll),
 		container.NewTabItem(loc.T("tab_add"), addScroll),
 		container.NewTabItem(loc.T("tab_settings"), settingsContent),
+		container.NewTabItem(loc.T("tab_about"), aboutContent),
 	)
 	w.SetContent(tabs)
 

@@ -62,6 +62,22 @@ var table = map[string]map[Lang]string{
 		RU: "Настройки",
 		EN: "Settings",
 	},
+	"tab_about": {
+		RU: "О программе",
+		EN: "About",
+	},
+	"about_version": {
+		RU: "Версия",
+		EN: "Version",
+	},
+	"about_branch": {
+		RU: "Ветка",
+		EN: "Branch",
+	},
+	"about_build_date": {
+		RU: "Дата сборки",
+		EN: "Build date",
+	},
 	"hint_hotkey": {
 		RU: "Горячая клавиша: %s — показать окно. Данные: %s",
 		EN: "Hotkey %s — show window. Data file: %s",
