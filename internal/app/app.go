@@ -2,9 +2,12 @@ package app
 
 import (
 	"errors"
+	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
+	"desctop-otp/internal/autostart"
 	"desctop-otp/internal/buildinfo"
 	"desctop-otp/internal/config"
 	"desctop-otp/internal/hotkey"
@@ -26,6 +29,9 @@ import (
 
 // Run starts the UI, global hotkey, and tray.
 func Run(cfg *config.File) {
+	if runtime.GOOS == "windows" {
+		_ = autostart.SetEnabled(cfg.StartWithWindowsBool())
+	}
 	if err := store.InitFromConfig(cfg); err != nil {
 		panic(err)
 	}
@@ -43,6 +49,7 @@ func Run(cfg *config.File) {
 	if ic := IconResource(); ic != nil {
 		w.SetIcon(ic)
 	}
+	w.SetFixedSize(false)
 	w.Resize(fyne.NewSize(560, 520))
 
 	hint := widget.NewLabel("")
@@ -199,6 +206,12 @@ func Run(cfg *config.File) {
 	hideAfterCopyCheck := widget.NewCheck("", func(bool) {})
 	hideAfterCopyCheck.SetChecked(cfg.HideAfterCopyBool())
 
+	var startupCheck *widget.Check
+	if runtime.GOOS == "windows" {
+		startupCheck = widget.NewCheck("", func(bool) {})
+		startupCheck.SetChecked(cfg.StartWithWindowsBool())
+	}
+
 	lblHotkey := widget.NewLabel("")
 	modAlt := widget.NewCheck("", nil)
 	modCtrl := widget.NewCheck("", nil)
@@ -300,11 +313,20 @@ func Run(cfg *config.File) {
 		cfg.SetMinimizeToTray(trayCheck.Checked)
 		cfg.SetDarkTheme(darkCheck.Checked)
 		cfg.SetHideAfterCopy(hideAfterCopyCheck.Checked)
+		if startupCheck != nil {
+			cfg.SetStartWithWindows(startupCheck.Checked)
+		}
 		applyTheme(a, cfg)
 
 		if err := config.Save(cfg); err != nil {
 			dialog.ShowError(errors.New(loc.T("settings_err_save")), w)
 			return
+		}
+		if startupCheck != nil {
+			if err := autostart.SetEnabled(cfg.StartWithWindowsBool()); err != nil {
+				dialog.ShowError(fmt.Errorf("%s %w", loc.T("settings_err_autostart"), err), w)
+				return
+			}
 		}
 		if err := store.InitFromConfig(cfg); err != nil {
 			dialog.ShowError(errors.New(loc.T("settings_err_data_dir")), w)
@@ -349,6 +371,9 @@ func Run(cfg *config.File) {
 		trayCheck.SetText(loc.T("settings_minimize_tray"))
 		darkCheck.SetText(loc.T("settings_dark_theme"))
 		hideAfterCopyCheck.SetText(loc.T("settings_hide_after_copy"))
+		if startupCheck != nil {
+			startupCheck.SetText(loc.T("settings_start_with_windows"))
+		}
 		lblHotkey.SetText(loc.T("settings_hotkey"))
 		modAlt.SetText(loc.T("settings_mod_alt"))
 		modCtrl.SetText(loc.T("settings_mod_ctrl"))
@@ -377,35 +402,45 @@ func Run(cfg *config.File) {
 		rebuildList()
 	}
 
-	settingsForm := container.NewVBox(
+	settingsTop := []fyne.CanvasObject{
 		lblDataDir,
 		dataDirEnt,
 		browseBtn,
 		trayCheck,
+	}
+	if startupCheck != nil {
+		settingsTop = append(settingsTop, startupCheck)
+	}
+	settingsTop = append(settingsTop,
 		darkCheck,
 		hideAfterCopyCheck,
 		widget.NewSeparator(),
 		lblHotkey,
+	)
+	settingsForm := container.NewVBox(append(settingsTop,
 		container.NewHBox(modAlt, modCtrl, modShift, modWin),
 		keyEnt,
 		widget.NewSeparator(),
 		lblLang,
 		langSelect,
 		saveSettingsBtn,
-	)
+	)...)
+
+	// Modest minimum so the window can be resized down (large fixed mins block shrinking).
+	minScroll := fyne.NewSize(300, 200)
 
 	codesScroll := container.NewVScroll(listBox)
-	codesScroll.SetMinSize(fyne.NewSize(520, 400))
+	codesScroll.SetMinSize(minScroll)
 
 	addVBox := container.NewVBox(
 		hint,
 		form,
 	)
 	addScroll := container.NewVScroll(addVBox)
-	addScroll.SetMinSize(fyne.NewSize(520, 400))
+	addScroll.SetMinSize(minScroll)
 
 	settingsContent := container.NewVScroll(settingsForm)
-	settingsContent.SetMinSize(fyne.NewSize(520, 360))
+	settingsContent.SetMinSize(minScroll)
 
 	aboutVersion := widget.NewLabel(buildinfo.Value(buildinfo.Version))
 	aboutBranch := widget.NewLabel(buildinfo.Value(buildinfo.Branch))
@@ -427,7 +462,7 @@ func Run(cfg *config.File) {
 	aboutForm.Items[2].Text = loc.T("about_build_date")
 
 	aboutContent := container.NewVScroll(aboutForm)
-	aboutContent.SetMinSize(fyne.NewSize(520, 360))
+	aboutContent.SetMinSize(minScroll)
 
 	tabs := container.NewAppTabs(
 		container.NewTabItem(loc.T("tab_totp"), codesScroll),

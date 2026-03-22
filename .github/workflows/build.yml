@@ -93,6 +93,9 @@ jobs:
           gcc --version
           go version
           go env CGO_ENABLED CC
+          go run ./cmd/genico -out build/windows/app.ico -icongo internal/app/icon.go
+          go install github.com/akavel/rsrc@v0.10.2
+          & "$(go env GOPATH)/bin/rsrc.exe" -ico build/windows/app.ico -o cmd/otp/rsrc.syso
           $version = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "dev" }
           $buildDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
           $branch = (git rev-parse --abbrev-ref HEAD 2>$null)

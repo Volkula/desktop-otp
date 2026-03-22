@@ -29,6 +29,8 @@ go build -ldflags="-s -w -H windowsgui" -o otp.exe ./cmd/otp
 
 `-H windowsgui` hides the console window.
 
+The icon shown in **File Explorer** for `otp.exe` comes from a Windows resource (`cmd/otp/rsrc.syso`), not from Fyne. It is generated from `internal/app/icon.go` together with `build/windows/app.ico`. After changing the embedded PNG, run `go install github.com/akavel/rsrc@latest`, then `go generate ./cmd/otp` from the repo root (or run the `go generate` lines in `cmd/otp/main.go` manually).
+
 To fill the **About** tab (optional), pass link-time strings, for example:
 
 ```powershell
@@ -92,6 +94,12 @@ If the file is missing, defaults are used (Ctrl+Shift+O).
 
 `accounts.json` holds **shared secrets** in readable form. Protect the folder (encryption, permissions) if needed.
 
+### Antivirus / SmartScreen (Windows)
+
+Unsigned `otp.exe` builds are sometimes flagged as suspicious by **Microsoft Defender** or other antivirus software. The program uses a **global hotkey**, **system tray**, and (if enabled) a **Run** registry entry for autostart — behavior that resembles persistence tools, so **heuristic detection** can produce **false positives** for this open-source app.
+
+**What you can do:** restore the file from **Protection history** and choose **Allow** on device; add a **folder exclusion** for the directory where you keep the app (Windows Security → Virus & threat protection → Manage settings → Exclusions). You can **report a false positive** via [Microsoft’s file submission](https://www.microsoft.com/wdsi/filesubmission). Long term, an **Authenticode code-signing certificate** (paid) reduces SmartScreen warnings and improves reputation.
+
 ### CI builds
 
 On push to the default branch, [GitHub Actions](.github/workflows/build.yml) builds a Windows `otp.exe` and uploads it as a workflow artifact.
@@ -122,6 +130,8 @@ go build -ldflags="-s -w -H windowsgui" -o otp.exe ./cmd/otp
 ```
 
 Флаг `-H windowsgui` отключает консольное окно.
+
+Иконка **в проводнике** у `otp.exe` берётся из ресурса Windows (`cmd/otp/rsrc.syso`), а не из Fyne. Файлы `rsrc.syso` и `build/windows/app.ico` собираются из `internal/app/icon.go`. После смены PNG в `icon.go` установите `github.com/akavel/rsrc`, затем выполните `go generate ./cmd/otp` из корня репозитория.
 
 Чтобы во вкладке **О программе** отображались версия, ветка и дата (по желанию), задайте `-X` при сборке:
 
@@ -185,6 +195,12 @@ go build -trimpath -ldflags "-s -w -X desctop-otp/internal/buildinfo.Version=${V
 ### Безопасность
 
 В **`accounts.json`** лежат **секреты** в открытом виде. При необходимости ограничьте доступ к папке или шифруйте носитель.
+
+### Антивирус и SmartScreen (Windows)
+
+Неподписанный **`otp.exe`** иногда попадает под эвристику **Защитника Windows** или другого антивируса. У программы есть **глобальная горячая клавиша**, **трей** и при желании запись в **автозагрузке** (реестр) — такое сочетание похоже на «персистентность», поэтому возможны **ложные срабатывания**.
+
+**Что сделать:** откройте **Журнал защиты** → восстановите файл и нажмите **Разрешить на устройстве**; при необходимости добавьте **исключение по папке**, где лежит программа (Параметры → Конфиденциальность и защита → Безопасность Windows → Защита от вирусов и угроз → Управление настройками → Исключения). Ложное срабатывание можно [отправить в Microsoft](https://www.microsoft.com/wdsi/filesubmission). На будущее снижает предупреждения **подпись кода** (Authenticode, сертификат платный).
 
 ### Сборка в CI
 

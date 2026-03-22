@@ -40,6 +40,9 @@ jobs:
           $msys2 = "${{ steps.msys2.outputs.msys2-location }}"
           $env:PATH = "$goBin;$msys2\mingw64\bin;$env:PATH"
           $env:PKG_CONFIG_PATH = "$msys2\mingw64\lib\pkgconfig"
+          go run ./cmd/genico -out build/windows/app.ico -icongo internal/app/icon.go
+          go install github.com/akavel/rsrc@v0.10.2
+          & "$(go env GOPATH)/bin/rsrc.exe" -ico build/windows/app.ico -o cmd/otp/rsrc.syso
           $version = "${{ github.ref_name }}"
           if (-not $version) { $version = "dev" }
           $buildDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")

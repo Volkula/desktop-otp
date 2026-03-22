@@ -175,8 +175,16 @@ var table = map[string]map[Lang]string{
 		EN: "Dark theme",
 	},
 	"settings_hide_after_copy": {
-		RU: "Скрывать окно после копирования кода (кнопка с иконкой)",
-		EN: "Hide window after copying code (icon button)",
+		RU: "Скрывать окно после копирования кода",
+		EN: "Hide window after copying code",
+	},
+	"settings_start_with_windows": {
+		RU: "Запускать при старте системы (Может быть помечена как вредоносная программа)",
+		EN: "Start with Windows (May be marked as a malicious program)",
+	},
+	"settings_err_autostart": {
+		RU: "Не удалось изменить автозапуск (реестр Windows).",
+		EN: "Could not change Windows autostart (registry).",
 	},
 	"settings_hotkey": {
 		RU: "Глобальная горячая клавиша",

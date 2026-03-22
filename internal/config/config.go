@@ -25,6 +25,8 @@ type File struct {
 	DarkTheme *bool `json:"dark_theme,omitempty"`
 	// HideAfterCopy: nil = default false — hide window after copying code from list.
 	HideAfterCopy *bool `json:"hide_after_copy,omitempty"`
+	// StartWithWindows: nil = default false — add exe to HKCU\...\Run (Windows only).
+	StartWithWindows *bool `json:"start_with_windows,omitempty"`
 }
 
 func dir() (string, error) {
@@ -75,13 +77,14 @@ func Load() (*File, error) {
 func defaultConfig() *File {
 	t, f := true, false
 	return &File{
-		Modifiers:       ModControl | ModShift,
-		VK:              0x4F,
-		Language:        "ru",
-		DataDir:         "",
-		MinimizeToTray:  &t,
-		DarkTheme:       &t,
-		HideAfterCopy:   &f,
+		Modifiers:          ModControl | ModShift,
+		VK:                 0x4F,
+		Language:           "ru",
+		DataDir:            "",
+		MinimizeToTray:     &t,
+		DarkTheme:          &t,
+		HideAfterCopy:      &f,
+		StartWithWindows:   &f,
 	}
 }
 
@@ -122,6 +125,19 @@ func (f *File) HideAfterCopyBool() bool {
 // SetHideAfterCopy sets hide-after-copy behavior.
 func (f *File) SetHideAfterCopy(v bool) {
 	f.HideAfterCopy = &v
+}
+
+// StartWithWindowsBool returns whether to register in Windows startup (Run key); default false.
+func (f *File) StartWithWindowsBool() bool {
+	if f.StartWithWindows == nil {
+		return false
+	}
+	return *f.StartWithWindows
+}
+
+// SetStartWithWindows sets autostart for Windows (ignored on other OS at apply time).
+func (f *File) SetStartWithWindows(v bool) {
+	f.StartWithWindows = &v
 }
 
 // ResolveDataDir returns the absolute directory for accounts.json.
