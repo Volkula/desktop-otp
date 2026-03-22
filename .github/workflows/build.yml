@@ -21,19 +21,20 @@ jobs:
           cache: true
 
       - name: Set up MSYS2 (MinGW gcc for Fyne CGO)
-        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          install: mingw-w64-x86_64-gcc
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config
 
       - name: Build otp.exe
+        shell: msys2 {0}
         env:
-          CGO_ENABLED: "1"
+          CGO_ENABLED: 1
         run: |
-          $msys2 = "${{ steps.msys2.outputs.msys2-location }}"
-          $env:PATH = "$msys2\mingw64\bin;$env:PATH"
+          set -e
+          cd "${GITHUB_WORKSPACE}"
           gcc --version
+          go version
           go build -trimpath -ldflags="-s -w -H windowsgui" -o otp.exe ./cmd/otp
 
       - name: Upload artifact
