@@ -171,8 +171,8 @@ var table = map[string]map[Lang]string{
 		EN: "Win",
 	},
 	"settings_key": {
-		RU: "Клавиша (A–Z или 0–9)",
-		EN: "Key (A–Z or 0–9)",
+		RU: "Клавиша: A–Z, 0–9 или ` (Win+` — VK 0xC0)",
+		EN: "Key: A–Z, 0–9, or ` (Win+` uses OEM3)",
 	},
 	"settings_lang": {
 		RU: "Язык интерфейса",
@@ -187,8 +187,8 @@ var table = map[string]map[Lang]string{
 		EN: "Settings saved.",
 	},
 	"settings_err_hotkey": {
-		RU: "Нужна одна буква A–Z или цифра 0–9 и хотя бы один модификатор.",
-		EN: "Use one letter A–Z or digit 0–9 and at least one modifier.",
+		RU: "Нужна одна клавиша (A–Z, 0–9 или `) и хотя бы один модификатор.",
+		EN: "Use one key (A–Z, 0–9, or `) and at least one modifier.",
 	},
 	"settings_err_save": {
 		RU: "Не удалось сохранить config.json",

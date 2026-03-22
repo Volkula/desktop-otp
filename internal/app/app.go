@@ -35,6 +35,7 @@ func Run(cfg *config.File) {
 	loc := locale.Bundle{Lang: locale.Parse(cfg.Language)}
 
 	a := fyneapp.NewWithID("desctop-otp")
+	applyAppIcon(a)
 	w := a.NewWindow(loc.T("window_title"))
 	w.Resize(fyne.NewSize(560, 520))
 
@@ -193,8 +194,11 @@ func Run(cfg *config.File) {
 	modWin.SetChecked(cfg.Modifiers&config.ModWin != 0)
 
 	keyEnt := widget.NewEntry()
-	if vk := cfg.VK; (vk >= 'A' && vk <= 'Z') || (vk >= '0' && vk <= '9') {
+	switch vk := cfg.VK; {
+	case (vk >= 'A' && vk <= 'Z') || (vk >= '0' && vk <= '9'):
 		keyEnt.SetText(string(rune(vk)))
+	case vk == config.VKOEM3:
+		keyEnt.SetText("`")
 	}
 
 	browseBtn := widget.NewButton("", func() {})

@@ -133,6 +133,12 @@ const (
 	ModWin     uint32 = 0x0008
 )
 
+// Windows virtual-key codes for OEM keys (see winuser.h).
+const (
+	// VK_OEM_3 — US layout: ` ~ (same physical key for both characters).
+	VKOEM3 uint32 = 0xC0
+)
+
 // HotkeyLabel builds a display string for the hotkey.
 func (f *File) HotkeyLabel() string {
 	var b []byte
@@ -152,19 +158,25 @@ func (f *File) HotkeyLabel() string {
 		b = append(b, byte(f.VK))
 	} else if f.VK >= '0' && f.VK <= '9' {
 		b = append(b, byte(f.VK))
+	} else if f.VK == VKOEM3 {
+		b = append(b, '`')
 	} else {
 		b = append(b, fmt.Sprintf("VK 0x%X", f.VK)...)
 	}
 	return string(b)
 }
 
-// ParseKeyString returns VK for a single character A–Z or 0–9.
+// ParseKeyString returns VK for one character: A–Z, 0–9, or ` / ~ (OEM3).
 func ParseKeyString(s string) (vk uint32, ok bool) {
 	s = strings.TrimSpace(s)
 	if len(s) != 1 {
 		return 0, false
 	}
 	r := rune(s[0])
+	switch r {
+	case '`', '~':
+		return VKOEM3, true
+	}
 	if r >= 'a' && r <= 'z' {
 		r = r - 'a' + 'A'
 	}
