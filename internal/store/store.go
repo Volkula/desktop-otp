@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"desctop-otp/internal/config"
+
 	"github.com/pquerna/otp/totp"
 )
 
@@ -18,12 +20,30 @@ type Account struct {
 	Secret string `json:"secret"`
 }
 
-// Data is the on-disk format next to the executable.
+// Data is the on-disk format (accounts.json).
 type Data struct {
 	Accounts []Account `json:"accounts"`
 }
 
+var resolvedDataDir string
+
+// InitFromConfig sets the data directory from config (creates dir if needed).
+func InitFromConfig(cfg *config.File) error {
+	dir, err := cfg.ResolveDataDir()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return err
+	}
+	resolvedDataDir = dir
+	return nil
+}
+
 func dataDir() (string, error) {
+	if resolvedDataDir != "" {
+		return resolvedDataDir, nil
+	}
 	exe, err := os.Executable()
 	if err != nil {
 		return "", err
@@ -31,7 +51,7 @@ func dataDir() (string, error) {
 	return filepath.Dir(exe), nil
 }
 
-// AccountsPath returns the path to accounts.json beside the binary.
+// AccountsPath returns the path to accounts.json in the configured data directory.
 func AccountsPath() (string, error) {
 	dir, err := dataDir()
 	if err != nil {
@@ -81,15 +101,22 @@ func Save(d *Data) error {
 	return os.Rename(tmp, p)
 }
 
+var (
+	// ErrEmptySecret is returned when the secret string is empty.
+	ErrEmptySecret = errors.New("empty secret")
+	// ErrInvalidSecret wraps validation failure for Base32 / TOTP generation.
+	ErrInvalidSecret = errors.New("invalid secret")
+)
+
 // ValidateSecret checks Base32 and that TOTP can be generated.
 func ValidateSecret(secret string) error {
 	secret = strings.TrimSpace(strings.ToUpper(secret))
 	if secret == "" {
-		return errors.New("пустой секрет")
+		return ErrEmptySecret
 	}
 	_, err := totp.GenerateCode(secret, time.Now())
 	if err != nil {
-		return fmt.Errorf("некорректный Base32 или секрет: %w", err)
+		return fmt.Errorf("%w: %w", ErrInvalidSecret, err)
 	}
 	return nil
 }
